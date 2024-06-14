@@ -39,6 +39,7 @@ const registeUser = asyncHandler( async (req, res) => {
 
 
     const {fullName, email, username, password} = req.body
+    // console.log(req.files);
 
     if(
         [fullName, email, username, password]
@@ -54,7 +55,12 @@ const registeUser = asyncHandler( async (req, res) => {
         throw new ApiError(409, "User with email or username already exists ")
     }
 
-    const avatarLocalPath = req.files?.avatar[0]?.path;
+    let avatarLocalPath;
+    
+    if(req.files && Array.isArray(req.files.avatar)
+        && req.files.avatar.length > 0){
+            avatarLocalPath = req.files.avatar[0].path;
+    }
     // const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
     let coverImageLocalPath;
@@ -105,7 +111,7 @@ const loginUser = asyncHandler( async (req, res) => {
     // send cookie
 
     const {email, username, password} = req.body;
-    console.log(email);
+    console.log(username);
     if(!username && !email){
         throw new ApiError(400, "username or email is required")
     }
@@ -244,7 +250,7 @@ const changeCurrentPassword = asyncHandler( async (req, res) => {
     user.password = newPassword;
     await user.save({validateBeforeSave: false})
 
-    return res.status(200
+    return res.status(200)
            .json(
                 new ApiResponse(
                     200,
@@ -252,7 +258,6 @@ const changeCurrentPassword = asyncHandler( async (req, res) => {
                     "Password changed successfully"
                 )
            )
-    )
 })
 
 const getCurrentUser = asyncHandler( async (req, res) => {
