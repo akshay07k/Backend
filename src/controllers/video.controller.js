@@ -56,6 +56,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
         thumbnail: thumbnail.url,
         title,
         description,
+        owner: req.user._id,
         duration: videoFile.duration
     })
 
@@ -79,6 +80,10 @@ const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
 
+    if(!isValidObjectId(videoId)){
+        throw new ApiError(401, "No such videoId exists")
+    }
+
     const video = await Video.findById(videoId)
 
     return res.status(200)
@@ -96,11 +101,80 @@ const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
 
+    if(!isValidObjectId(videoId)){
+        throw new ApiError(400, "No such videoId exists")
+    }
+
+    const { title, description } = req.body
+
+    if(!title || !description){
+        throw new ApiError(401, "All fields are required")
+    }
+
+    let thumbnailLocalPath = req?.file?.path;
+    
+    if(!thumbnailLocalPath){
+        throw new ApiError(401, "thumbnail required")
+    }
+
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+
+    if(!thumbnail){
+        throw new ApiError(401, "Error while uploading thumbnail")
+    }
+
+    const video = await Video.findByIdAndUpdate(
+        videoId,
+        {
+            $set: {
+                title,
+                description,
+                thumbnail: thumbnail.url
+            }
+        },
+        {
+            new: true
+        }
+    )
+
+    return res.status(200)
+              .json(
+                    new ApiResponse(
+                        200,
+                        video,
+                        "video data updated successfully"
+                    )
+              )
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: delete video
+
+    if(!isValidObjectId(videoId)){
+        throw new ApiError(400, "No such videoId exists")
+    }
+
+    const video = await Video.findById(videoId)
+
+    if(!video){
+        throw new ApiError(401, "No such video exists")
+    }
+
+    if(video.owner.toString() != req.user._id.toString()){
+        throw new ApiError(400, "Can't delete, you are not owner of this video")
+    }
+
+    await Video.findByIdAndDelete(videoId);
+
+    return res.status(200)
+              .json(
+                    new ApiResponse(
+                        200,
+                        {},
+                        "video deleted successfully"
+                    )
+              )
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
