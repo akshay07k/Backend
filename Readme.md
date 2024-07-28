@@ -37,6 +37,6 @@
 - Bcrypt
 
   
-/*Additional Information
+/*Additional Information: 
 Significant time and effort invested in building this project.
 Aimed to provide a valuable learning experience.*/
